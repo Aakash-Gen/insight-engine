@@ -1,0 +1,30 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Never bake secrets into the image
+.env
+.env.*
+!.env.example
+
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# HuggingFace model cache (downloaded at runtime)
+.cache/
+
+.DS_Store
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+
+.git/
+.gitignore

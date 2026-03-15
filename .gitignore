@@ -22,3 +22,16 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files — never commit secrets
+.env
+.env.local
+.env.*.local
+researchmind-backend/.env
+
+# Python cache
+**/__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/

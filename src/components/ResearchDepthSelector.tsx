@@ -7,10 +7,10 @@ interface Props {
   onChange: (depth: ResearchDepth) => void;
 }
 
-const options: { value: ResearchDepth; label: string; icon: typeof Zap; desc: string; time: string }[] = [
-  { value: 'quick', label: 'Quick Scan', icon: Zap, desc: '3-5 sources, fast overview', time: '~30s' },
-  { value: 'standard', label: 'Standard', icon: Target, desc: '10-15 sources, balanced', time: '~2min' },
-  { value: 'deep', label: 'Deep Dive', icon: Telescope, desc: '25+ sources, comprehensive', time: '~5min' },
+const options: { value: ResearchDepth; label: string; icon: typeof Zap; desc: string; time: string; words: string }[] = [
+  { value: 'quick', label: 'Quick Scan',  icon: Zap,       desc: '~10 sources · 3-4 sections',   time: '~1 min',  words: '~500 words'  },
+  { value: 'standard', label: 'Standard', icon: Target,    desc: '~15 sources · 4-6 sections',   time: '~3 min',  words: '~1200 words' },
+  { value: 'deep', label: 'Deep Dive',    icon: Telescope, desc: '25+ sources · 6-8 sections',   time: '~6 min',  words: '~2500 words' },
 ];
 
 export const ResearchDepthSelector = ({ value, onChange }: Props) => {
@@ -36,7 +36,7 @@ export const ResearchDepthSelector = ({ value, onChange }: Props) => {
               {opt.label}
             </div>
             <div className="text-xs text-muted-foreground mt-1">{opt.desc}</div>
-            <div className="text-xs text-muted-foreground/60 mt-1">{opt.time}</div>
+            <div className="text-xs text-muted-foreground/60 mt-1">{opt.words} · {opt.time}</div>
           </motion.button>
         );
       })}

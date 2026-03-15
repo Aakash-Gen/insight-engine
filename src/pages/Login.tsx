@@ -10,12 +10,15 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  const login = useAuthStore((s) => s.login);
+  const { login, loginWithGoogle, isLoading, error, clearError } = useAuthStore();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, password);
-    navigate('/dashboard');
+    clearError();
+    await login(email, password);
+    if (!useAuthStore.getState().error) {
+      navigate('/dashboard');
+    }
   };
 
   return (
@@ -36,6 +39,12 @@ const Login = () => {
         </div>
 
         <div className="gradient-border p-6 rounded-xl">
+          {error && (
+            <div className="mb-4 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -46,6 +55,7 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10 bg-background border-border"
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="relative">
@@ -57,10 +67,11 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10 bg-background border-border"
                 required
+                disabled={isLoading}
               />
             </div>
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
-              Sign in
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isLoading}>
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </Button>
           </form>
 
@@ -73,7 +84,8 @@ const Login = () => {
             <Button
               variant="outline"
               className="w-full border-border hover:bg-surface-hover"
-              onClick={() => { login('demo@example.com', ''); navigate('/dashboard'); }}
+              onClick={() => { clearError(); loginWithGoogle(); }}
+              disabled={isLoading}
             >
               <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />

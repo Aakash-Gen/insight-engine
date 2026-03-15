@@ -11,12 +11,17 @@ const Signup = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  const signup = useAuthStore((s) => s.signup);
+  const { signup, loginWithGoogle, isLoading, error, clearError } = useAuthStore();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    signup(name, email, password);
-    navigate('/dashboard');
+    clearError();
+    await signup(name, email, password);
+    const state = useAuthStore.getState();
+    if (state.isAuthenticated) {
+      navigate('/dashboard');
+    }
+    // If error is "Check your email..." we stay on page and show the message
   };
 
   return (
@@ -37,6 +42,16 @@ const Signup = () => {
         </div>
 
         <div className="gradient-border p-6 rounded-xl">
+          {error && (
+            <div className={`mb-4 px-3 py-2 rounded-lg text-sm border ${
+              error.includes('Check your email')
+                ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                : 'bg-red-500/10 border-red-500/20 text-red-400'
+            }`}>
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -46,6 +61,7 @@ const Signup = () => {
                 onChange={(e) => setName(e.target.value)}
                 className="pl-10 bg-background border-border"
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="relative">
@@ -57,21 +73,24 @@ const Signup = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10 bg-background border-border"
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 type="password"
-                placeholder="Password"
+                placeholder="Password (min 6 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10 bg-background border-border"
+                minLength={6}
                 required
+                disabled={isLoading}
               />
             </div>
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
-              Create account
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isLoading}>
+              {isLoading ? 'Creating account...' : 'Create account'}
             </Button>
           </form>
 
@@ -84,7 +103,8 @@ const Signup = () => {
             <Button
               variant="outline"
               className="w-full border-border hover:bg-surface-hover"
-              onClick={() => { useAuthStore.getState().signup('Alex Chen', 'demo@example.com', ''); navigate('/dashboard'); }}
+              onClick={() => { clearError(); loginWithGoogle(); }}
+              disabled={isLoading}
             >
               <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
