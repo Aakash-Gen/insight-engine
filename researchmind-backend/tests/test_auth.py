@@ -21,8 +21,7 @@ from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
 from core.auth import get_current_user, get_current_user_query
-from core.config import settings
-from tests.conftest import TOKEN_A, USER_A_ID, _mint_token, auth_header
+from tests.conftest import TOKEN_A, USER_A_ID, TEST_JWT_SECRET, _mint_token, auth_header
 
 # ---------------------------------------------------------------------------
 # Minimal test app that exposes both auth dependencies
@@ -63,7 +62,7 @@ class TestBearerAuth:
     def test_expired_token_returns_401(self, auth_client):
         expired = jwt.encode(
             {"sub": USER_A_ID, "aud": "authenticated", "iat": 0, "exp": 1},
-            settings.SUPABASE_JWT_SECRET,
+            TEST_JWT_SECRET,
             algorithm="HS256",
         )
         resp = auth_client.get("/protected", headers=auth_header(expired))
@@ -91,7 +90,7 @@ class TestBearerAuth:
     def test_token_missing_sub_claim_returns_401(self, auth_client):
         no_sub = jwt.encode(
             {"email": "x@x.com", "aud": "authenticated", "exp": int(time.time()) + 3600},
-            settings.SUPABASE_JWT_SECRET,
+            TEST_JWT_SECRET,
             algorithm="HS256",
         )
         resp = auth_client.get("/protected", headers=auth_header(no_sub))
@@ -115,7 +114,7 @@ class TestQueryParamAuth:
     def test_expired_token_in_query_param_returns_401(self, auth_client):
         expired = jwt.encode(
             {"sub": USER_A_ID, "aud": "authenticated", "iat": 0, "exp": 1},
-            settings.SUPABASE_JWT_SECRET,
+            TEST_JWT_SECRET,
             algorithm="HS256",
         )
         resp = auth_client.get(f"/sse-protected?token={expired}")

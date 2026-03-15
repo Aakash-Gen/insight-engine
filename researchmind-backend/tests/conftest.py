@@ -30,6 +30,10 @@ USER_A_ID = str(uuid.uuid4())
 USER_B_ID = str(uuid.uuid4())
 RESEARCH_ID = str(uuid.uuid4())
 
+# Consistent secret used for all test token minting and verification.
+# Falls back to a fixed string when SUPABASE_JWT_SECRET is unset in CI.
+TEST_JWT_SECRET: str = settings.SUPABASE_JWT_SECRET or "researchmind-ci-test-secret"
+
 
 def _mint_token(user_id: str, email: str = "test@example.com") -> str:
     """Mint a valid Supabase-style HS256 JWT for tests."""
@@ -42,14 +46,14 @@ def _mint_token(user_id: str, email: str = "test@example.com") -> str:
         "iat": now,
         "exp": now + 3600,
     }
-    return jwt.encode(payload, settings.SUPABASE_JWT_SECRET, algorithm="HS256")
+    return jwt.encode(payload, TEST_JWT_SECRET, algorithm="HS256")
 
 
 TOKEN_A = _mint_token(USER_A_ID, "usera@example.com")
 TOKEN_B = _mint_token(USER_B_ID, "userb@example.com")
 EXPIRED_TOKEN = jwt.encode(
     {"sub": USER_A_ID, "aud": "authenticated", "iat": 0, "exp": 1},  # exp in the past
-    settings.SUPABASE_JWT_SECRET,
+    TEST_JWT_SECRET,
     algorithm="HS256",
 )
 
@@ -140,7 +144,7 @@ def _fake_get_user(token: str):
     try:
         payload = _jwt.decode(
             token,
-            settings.SUPABASE_JWT_SECRET or "test-secret",
+            TEST_JWT_SECRET,
             algorithms=["HS256"],
             audience="authenticated",
         )
