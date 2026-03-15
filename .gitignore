@@ -35,3 +35,6 @@ researchmind-backend/.env
 *.pyo
 .pytest_cache/
 *.egg-info/
+
+# Internal
+ROADMAP.md
