@@ -95,8 +95,10 @@ def _run_research_graph(
 
     try:
         last_log_count = 0
+        final_state: dict = {}
 
         for event in research_graph.stream(initial_state, stream_mode="values"):
+            final_state = event  # last iteration = terminal state
             current_logs = event.get("logs", [])
             new_logs = current_logs[last_log_count:]
             last_log_count = len(current_logs)
@@ -114,26 +116,6 @@ def _run_research_graph(
                 except Exception as exc:
                     logger.error("log_persist_error", research_id=research_id, error=str(exc))
 
-        # Re-invoke to get terminal state (stream gives snapshots)
-        final_state = research_graph.invoke(initial_state)
-
-        # Embed and store search results in pgvector for Q&A
-        search_results = final_state.get("search_results", [])
-        if search_results:
-            chunks = [
-                {
-                    "content": r.get("content", ""),
-                    "metadata": {
-                        "url": r.get("url", ""),
-                        "title": r.get("title", ""),
-                        "query": r.get("query", ""),
-                    },
-                }
-                for r in search_results
-                if r.get("content")
-            ]
-            upsert_chunks(research_id, chunks)
-
         final_report_raw = final_state.get("final_report")
         final_report_dict = None
         if final_report_raw:
@@ -142,6 +124,8 @@ def _run_research_graph(
             except json.JSONDecodeError:
                 final_report_dict = {"raw": final_report_raw}
 
+        # Save the completed report first — before any heavy operations that
+        # might crash (e.g. loading the embedding model on low-memory hosts).
         supabase.table("research_sessions").update({
             "status": "complete",
             "logs": final_state.get("logs", []),
@@ -151,6 +135,27 @@ def _run_research_graph(
             "is_complete": True,
             "token_usage": final_state.get("token_usage", 0),
         }).eq("id", research_id).execute()
+
+        # Embed and store search results in pgvector for Q&A (best-effort).
+        # Skipped if the embedding model can't load (e.g. OOM on free tier).
+        search_results = final_state.get("search_results", [])
+        if search_results:
+            try:
+                chunks = [
+                    {
+                        "content": r.get("content", ""),
+                        "metadata": {
+                            "url": r.get("url", ""),
+                            "title": r.get("title", ""),
+                            "query": r.get("query", ""),
+                        },
+                    }
+                    for r in search_results
+                    if r.get("content")
+                ]
+                upsert_chunks(research_id, chunks)
+            except Exception as exc:
+                logger.warning("embed_chunks_skipped", research_id=research_id, error=str(exc))
 
         stream_bus.push_done(research_id, "complete", loop)
         log.info("pipeline_complete")
