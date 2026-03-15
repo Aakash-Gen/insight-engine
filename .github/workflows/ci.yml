@@ -51,4 +51,5 @@ jobs:
           ENVIRONMENT: test
           SENTRY_DSN: ""
           CORS_ORIGINS: "http://localhost:5173"
+          ANTHROPIC_API_KEY: dummy-anthropic-key
         run: pytest -v --asyncio-mode=auto

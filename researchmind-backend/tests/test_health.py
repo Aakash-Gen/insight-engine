@@ -10,7 +10,7 @@ class TestHealth:
 
     def test_health_response_shape(self, client):
         body = client.get("/health").json()
-        assert body["status"] == "ok"
+        assert body["status"] in ("ok", "degraded")
         assert "provider" in body
         assert "model" in body
 

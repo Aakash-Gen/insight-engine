@@ -124,6 +124,50 @@ def make_supabase_mock(row: dict | None = None, rows: list | None = None):
 
 
 # ---------------------------------------------------------------------------
+# Autouse fixture — mock Supabase auth.get_user for all tests
+# ---------------------------------------------------------------------------
+
+def _fake_get_user(token: str):
+    """
+    Decode a test JWT locally instead of hitting the real Supabase API.
+
+    - Valid token  → returns mock response with user.id / user.email set
+    - Expired token → returns response with user=None (triggers "Invalid or expired token." detail)
+    - Wrong secret / malformed → re-raises so _decode_token catches it and returns 401
+    """
+    import jwt as _jwt
+
+    try:
+        payload = _jwt.decode(
+            token,
+            settings.SUPABASE_JWT_SECRET or "test-secret",
+            algorithms=["HS256"],
+            audience="authenticated",
+        )
+    except _jwt.ExpiredSignatureError:
+        resp = MagicMock()
+        resp.user = None
+        return resp
+    except Exception:
+        raise  # _decode_token will catch and return HTTP 401
+
+    mock_user = MagicMock()
+    mock_user.id = payload.get("sub")
+    mock_user.email = payload.get("email", "")
+    resp = MagicMock()
+    resp.user = mock_user
+    return resp
+
+
+@pytest.fixture(autouse=True)
+def mock_supabase_auth():
+    """Prevent any test from hitting the real Supabase Auth API."""
+    with patch("core.supabase_client.supabase") as mock_sb:
+        mock_sb.auth.get_user.side_effect = _fake_get_user
+        yield mock_sb
+
+
+# ---------------------------------------------------------------------------
 # App fixture — patch Supabase at module level before importing the app
 # ---------------------------------------------------------------------------
 
